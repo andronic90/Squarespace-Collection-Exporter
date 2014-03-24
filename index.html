@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html class="no-js">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Squarespace Collection Exporter</title>
+        <meta name="description" content="You be all like, let me export my collection. But Squarespace be all like, you can have 250 items.">
+        <meta name="viewport" content="initial-scale=1">
+        <link rel="stylesheet" href="css/normalize.css">
+        <link rel="stylesheet" href="css/main.css">
+    </head>
+    <body>
+        <!--[if lt IE 8]>
+            <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+
+        <header class="header">
+            <h1>Collection Exporter</h1>
+        </header>
+
+        <section role="main">
+
+            <h2>Put the URL in the text field below.</h2>
+            <p>Just use the collection pathname. For example, instead of putting in <code>http://mysite.squarespace.com/my-collection</code>, just put <code>my-collection</code> with no slashes. For your homepage collection, just use a space.
+
+            <div id="errors"></div>
+
+            <input id="urlId" type="text" placeholder="my-collection">
+
+            <button type="submit" id="submit">Go get it</button>
+
+            <textarea id="output"></textarea>
+
+        </section>
+
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+        <script>
+        	$(function () {
+        		'use strict';
+
+        		var main = $('[role="main"]');
+						var errors = $('#errors');
+        		var input = $('#urlId');
+        		var output = $('#output');
+        		var submit = $('#submit');
+        		var hostname = window.location.hostname;
+        		var collection;
+        		var url;
+
+        		submit.click(function () {
+        			url = input.val();
+
+        			if (!url) {
+        				errors.html('Put in a URL, fool!');
+        				input.focus();
+
+        				input.on('change', function () {
+        					errors.html('');
+        				});
+        			} else {
+        				url = '//' + hostname + '/' + url + '?format=json-pretty';
+
+        				ajaxRequest(url, true);
+        			}
+        		});
+
+        		function ajaxRequest (url) {
+							$.getJSON(url, function(data) {
+								success(data);
+							});
+        		}
+
+        		function success (data) {
+
+        			if (collection) {
+        				for (var i = 0; i < data.items.length; i++) {
+	        				collection.items.push(data.items[i]);
+	        			}
+        			} else {
+        				collection = data;
+
+        				input.addClass('loading');
+        				output.addClass('loading');
+        				submit.addClass('loading').addClass('disabled');
+        			}
+
+							if (data.pagination.nextPageUrl) {
+
+								// If there's a next page, go get it.
+								var next = data.pagination.nextPageUrl.substr(1)
+									.replace('?', '&');
+								url = url + next;
+								ajaxRequest(url);
+								url = url.replace(next, '');
+
+							} else {
+
+								// If there's no next page, put the JSON in the textarea.
+								delete collection.pagination;
+								collection = JSON.stringify(collection);
+								output.val(collection).select();
+
+								submit.html('ctrl + c');
+
+        				input.removeClass('loading');
+        				output.removeClass('loading');
+        				submit.removeClass('loading');
+
+							}
+
+        		}
+        	});
+        </script>
+
+    </body>
+</html>
